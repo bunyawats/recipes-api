@@ -6,6 +6,7 @@ import (
 	"github.com/rs/xid"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -92,11 +93,31 @@ func ListRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
 }
 
+func SearchRecipesHandler(c *gin.Context) {
+	tag := c.Query("tag")
+	listOfReceipes := make([]Recipe, 0)
+	for i := 0; i < len(recipes); i++ {
+		found := false
+		for _, t := range recipes[i].Tags {
+
+			if strings.EqualFold(t, tag) {
+				found = true
+			}
+		}
+		if found {
+			listOfReceipes = append(listOfReceipes, recipes[i])
+		}
+	}
+	c.JSON(http.StatusOK, listOfReceipes)
+
+}
+
 func main() {
 	router := gin.Default()
 	router.POST("/recipes", NewRecipeHandler)
 	router.GET("/recipes", ListRecipesHandler)
 	router.PUT("/recipes/:id", UpdateRecipeHandler)
 	router.DELETE("/recipes/:id", DeleteRecipesHandler)
+	router.GET("/recipes/search", SearchRecipesHandler)
 	router.Run()
 }
