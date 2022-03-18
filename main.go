@@ -17,9 +17,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/xid"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -36,11 +41,40 @@ type Recipe struct {
 }
 
 var recipes []Recipe
+var ctx context.Context
+var err error
+var client *mongo.Client
 
 func init() {
+
+	fmt.Println("MONGO_URI", os.Getenv("MONGO_URI"))
+	fmt.Println("MONGO_DATABASE", os.Getenv("MONGO_DATABASE"))
+
 	recipes = make([]Recipe, 0)
 	file, _ := os.ReadFile("recipes.json")
 	_ = json.Unmarshal([]byte(file), &recipes)
+
+	ctx = context.Background()
+	client, err = mongo.Connect(
+		ctx,
+		options.Client().ApplyURI(
+			os.Getenv("MONGO_URI"),
+		),
+	)
+	log.Println("Connected to MongoDB")
+
+	var lisOfRecipes []interface{}
+	for _, recipe := range recipes {
+		lisOfRecipes = append(lisOfRecipes, recipe)
+	}
+	collection := client.Database(
+		os.Getenv("MONGO_DATABASE"),
+	).Collection("recipes")
+	insertManyResult, err := collection.InsertMany(ctx, lisOfRecipes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
 // swagger:operation POST /recipes recipes newRecipe
