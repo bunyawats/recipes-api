@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/xid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
@@ -44,11 +45,17 @@ var recipes []Recipe
 var ctx context.Context
 var err error
 var client *mongo.Client
+var db *mongo.Database
 
-func init() {
+func InitLoad() {
 
-	fmt.Println("MONGO_URI", os.Getenv("MONGO_URI"))
-	fmt.Println("MONGO_DATABASE", os.Getenv("MONGO_DATABASE"))
+	var databaseUri = os.Getenv("MONGO_URI")
+	var databaseName = os.Getenv("MONGO_DATABASE")
+	const collectionName = "recipes"
+
+	fmt.Println("databaseUri", databaseUri)
+	fmt.Println("databaseName", databaseName)
+	fmt.Println("collectionName", collectionName)
 
 	recipes = make([]Recipe, 0)
 	file, _ := os.ReadFile("recipes.json")
@@ -57,9 +64,7 @@ func init() {
 	ctx = context.Background()
 	client, err = mongo.Connect(
 		ctx,
-		options.Client().ApplyURI(
-			os.Getenv("MONGO_URI"),
-		),
+		options.Client().ApplyURI(databaseUri),
 	)
 	log.Println("Connected to MongoDB")
 
@@ -67,14 +72,66 @@ func init() {
 	for _, recipe := range recipes {
 		lisOfRecipes = append(lisOfRecipes, recipe)
 	}
-	collection := client.Database(
-		os.Getenv("MONGO_DATABASE"),
-	).Collection("recipes")
+	collection := client.Database(databaseName).Collection(collectionName)
 	insertManyResult, err := collection.InsertMany(ctx, lisOfRecipes)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
+}
+
+func init() {
+
+	var databaseUri = os.Getenv("MONGO_URI")
+	var databaseName = os.Getenv("MONGO_DATABASE")
+
+	fmt.Println("databaseUri", databaseUri)
+	fmt.Println("databaseName", databaseName)
+
+	ctx = context.Background()
+	client, err = mongo.Connect(
+		ctx,
+		options.Client().ApplyURI(databaseUri),
+	)
+	if err != nil {
+		log.Fatal("Connect to MongoDB failed:", err.Error())
+	}
+	db = client.Database(databaseName)
+	log.Println("Connected to MongoDB")
+}
+
+// swagger:operation GET /recipes recipes listRecipes
+// Returns list of recipes
+// ---
+// produces:
+// - application/json
+// responses:
+//     '200':
+//         description: Successful operation
+func ListRecipesHandler(c *gin.Context) {
+
+	const collectionName = "recipes"
+	collection := db.Collection(collectionName)
+
+	cur, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		log.Println("error: ", err.Error())
+		c.JSON(http.StatusInternalServerError,
+			gin.H{
+				"error": err.Error(),
+			},
+		)
+		return
+	}
+	defer cur.Close(ctx)
+
+	recipes := make([]Recipe, 0)
+	for cur.Next(ctx) {
+		var recipe Recipe
+		cur.Decode(&recipe)
+		recipes = append(recipes, recipe)
+	}
+	c.JSON(http.StatusOK, recipes)
 }
 
 // swagger:operation POST /recipes recipes newRecipe
@@ -191,18 +248,6 @@ func DeleteRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Recipe has been deleted",
 	})
-}
-
-// swagger:operation GET /recipes recipes listRecipes
-// Returns list of recipes
-// ---
-// produces:
-// - application/json
-// responses:
-//     '200':
-//         description: Successful operation
-func ListRecipesHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, recipes)
 }
 
 // swagger:operation GET /recipes/search recipes searchRecipe
