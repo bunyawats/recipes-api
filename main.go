@@ -23,6 +23,7 @@ import (
 	handler "github.com/bunyawats/recipes-api/handlers"
 	"github.com/bunyawats/recipes-api/models"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
@@ -85,7 +86,16 @@ func init() {
 	collection := client.Database(databaseName).Collection(collectionName)
 	log.Println("Connected to MongoDB")
 
-	recipesHandler = handler.NewRecipesHandler(ctx, collection)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	status := redisClient.Ping()
+	fmt.Println(status)
+
+	recipesHandler = handler.NewRecipesHandler(ctx, collection, redisClient)
+
 }
 
 func main() {
