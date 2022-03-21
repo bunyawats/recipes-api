@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/bunyawats/recipes-api/models"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,14 +20,20 @@ var recipes []models.Recipe
 var err error
 
 type RecipesHandler struct {
-	collection *mongo.Collection
-	ctx        context.Context
+	collection  *mongo.Collection
+	ctx         context.Context
+	redisClient *redis.Client
 }
 
-func NewRecipesHandler(ctx context.Context, collection *mongo.Collection) *RecipesHandler {
+func NewRecipesHandler(
+	ctx context.Context,
+	collection *mongo.Collection,
+	redisClient *redis.Client,
+) *RecipesHandler {
 	return &RecipesHandler{
 		collection,
 		ctx,
+		redisClient,
 	}
 }
 
@@ -39,30 +47,55 @@ func NewRecipesHandler(ctx context.Context, collection *mongo.Collection) *Recip
 //         description: Successful operation
 func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 
-	cur, err := handler.collection.Find(handler.ctx, bson.M{})
-	if err != nil {
-		log.Println("error: ", err.Error())
+	const recipes_key = "recipes"
+
+	val, err := handler.redisClient.Get(recipes_key).Result()
+	if err == redis.Nil {
+
+		log.Printf("Request to MongoDB")
+
+		cur, err := handler.collection.Find(handler.ctx, bson.M{})
+		if err != nil {
+			log.Println("error: ", err.Error())
+			c.JSON(http.StatusInternalServerError,
+				gin.H{
+					"error": err.Error(),
+				},
+			)
+			return
+		}
+		defer func(cur *mongo.Cursor, ctx context.Context) {
+			err := cur.Close(ctx)
+			if err != nil {
+				log.Println("error: ", err.Error())
+			}
+		}(cur, handler.ctx)
+
+		recipes := make([]models.Recipe, 0)
+		for cur.Next(handler.ctx) {
+			var recipe models.Recipe
+			_ = cur.Decode(&recipe)
+			recipes = append(recipes, recipe)
+		}
+
+		data, _ := json.Marshal(recipes)
+		handler.redisClient.Set(recipes_key, data, 0)
+
+		c.JSON(http.StatusOK, recipes)
+
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError,
 			gin.H{
 				"error": err.Error(),
-			},
-		)
-		return
-	}
-	defer func(cur *mongo.Cursor, ctx context.Context) {
-		err := cur.Close(ctx)
-		if err != nil {
-			log.Println("error: ", err.Error())
-		}
-	}(cur, handler.ctx)
+			})
+	} else {
+		log.Printf("Request to Redis")
+		recipes := make([]models.Recipe, 0)
+		json.Unmarshal([]byte(val), &recipes)
 
-	recipes := make([]models.Recipe, 0)
-	for cur.Next(handler.ctx) {
-		var recipe models.Recipe
-		_ = cur.Decode(&recipe)
-		recipes = append(recipes, recipe)
+		c.JSON(http.StatusOK, recipes)
 	}
-	c.JSON(http.StatusOK, recipes)
+
 }
 
 // swagger:operation POST /recipes recipes newRecipe
@@ -145,11 +178,11 @@ func (handler *RecipesHandler) UpdateRecipeHandler(c *gin.Context) {
 		bson.D{
 			{
 				"$set", bson.D{
-					{"name", recipe.Name},
-					{"instructions", recipe.Instructions},
-					{"ingredients", recipe.Ingredients},
-					{"tags", recipe.Tags},
-				},
+				{"name", recipe.Name},
+				{"instructions", recipe.Instructions},
+				{"ingredients", recipe.Ingredients},
+				{"tags", recipe.Tags},
+			},
 			},
 		},
 	)
