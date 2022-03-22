@@ -50,7 +50,7 @@ func NewRecipesHandler(
 func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 
 	val, err := handler.redisClient.Get(recipes_key).Result()
-	if err == redis.Nil {
+	if true {
 
 		log.Printf("Request to MongoDB")
 
@@ -187,11 +187,11 @@ func (handler *RecipesHandler) UpdateRecipeHandler(c *gin.Context) {
 		bson.D{
 			{
 				"$set", bson.D{
-				{"name", recipe.Name},
-				{"instructions", recipe.Instructions},
-				{"ingredients", recipe.Ingredients},
-				{"tags", recipe.Tags},
-			},
+					{"name", recipe.Name},
+					{"instructions", recipe.Instructions},
+					{"ingredients", recipe.Ingredients},
+					{"tags", recipe.Tags},
+				},
 			},
 		},
 	)
