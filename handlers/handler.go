@@ -25,20 +25,17 @@ type RecipesHandler struct {
 	collection  *mongo.Collection
 	ctx         context.Context
 	redisClient *redis.Client
-	xApiKey     string
 }
 
 func NewRecipesHandler(
 	ctx context.Context,
 	collection *mongo.Collection,
 	redisClient *redis.Client,
-	xApiKey string,
 ) *RecipesHandler {
 	return &RecipesHandler{
 		collection,
 		ctx,
 		redisClient,
-		xApiKey,
 	}
 }
 
@@ -121,14 +118,6 @@ func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 //     '404':
 //         description: Invalid recipe ID
 func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
-
-	// security validation
-	if c.GetHeader("X-API-KEY") != handler.xApiKey {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "API key not provided or invalid",
-		})
-		return
-	}
 
 	// validate request
 	var recipe models.Recipe
