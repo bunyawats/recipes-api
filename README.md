@@ -2,6 +2,7 @@ go get github.com/gin-gonic/gin
 go get github.com/rs/xid
 go get go.mongodb.org/mongo-driver/mongo
 go get github.com/go-redis/redis/v8
+go get github.com/dgrijalva/jwt-go
 
 go get -u
 go mod tidy
@@ -27,5 +28,9 @@ ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
 
 brew install gnuplot
 gnuplot apache-benchmark.p
+
+
+https://jwt.io/
+
 
 

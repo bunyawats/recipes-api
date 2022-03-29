@@ -27,17 +27,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
-	"net/http"
 	"os"
 )
 
-var recipesHandler *handler.RecipesHandler
+const (
+	mongoUri       = "MONGO_URI"
+	mongoDatabase  = "MONGO_DATABASE"
+	collectionName = "recipes"
+	apiKey         = "X-API-KEY"
+	jwtSecretKey   = "JWT_SECRET"
+)
 
 func InitLoad() {
 
-	var databaseUri = os.Getenv("MONGO_URI")
-	var databaseName = os.Getenv("MONGO_DATABASE")
-	const collectionName = "recipes"
+	var databaseUri = os.Getenv(mongoUri)
+	var databaseName = os.Getenv(mongoDatabase)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
@@ -66,15 +70,22 @@ func InitLoad() {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
+var authHandler *handler.AuthHandler
+var recipesHandler *handler.RecipesHandler
+var xApiKey string
+
 func init() {
 
-	var databaseUri = os.Getenv("MONGO_URI")
-	var databaseName = os.Getenv("MONGO_DATABASE")
-	const collectionName = "recipes"
+	var databaseUri = os.Getenv(mongoUri)
+	var databaseName = os.Getenv(mongoDatabase)
+	xApiKey = os.Getenv(apiKey)
+	var jwtSecret = os.Getenv(jwtSecretKey)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
 	fmt.Println("collectionName", collectionName)
+	fmt.Println("xApiKey", xApiKey)
+	fmt.Println("jwtSecret", jwtSecret)
 
 	ctx := context.Background()
 	client, err := mongo.Connect(
@@ -100,26 +111,26 @@ func init() {
 		collection,
 		redisClient,
 	)
+	authHandler = &handler.AuthHandler{}
 
 }
 
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		const secureKey = "X-API-KEY"
-		var xApiKey = os.Getenv(secureKey)
-		if c.GetHeader(secureKey) != xApiKey {
-			c.AbortWithStatus(http.StatusUnauthorized)
-		}
-		c.Next()
-	}
-}
+//func AuthMiddleware() gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		if c.GetHeader(apiKey) != xApiKey {
+//			c.AbortWithStatus(http.StatusUnauthorized)
+//		}
+//		c.Next()
+//	}
+//}
 
 func main() {
 	router := gin.Default()
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
+	router.POST("/signin", authHandler.SignInHandler)
 
 	authorized := router.Group("/")
-	authorized.Use(AuthMiddleware())
+	authorized.Use(handler.AuthMiddleware())
 	{
 		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
 		authorized.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
