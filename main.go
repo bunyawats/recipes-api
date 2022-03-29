@@ -69,10 +69,12 @@ func init() {
 
 	var databaseUri = os.Getenv("MONGO_URI")
 	var databaseName = os.Getenv("MONGO_DATABASE")
+	var xApiKey = os.Getenv("X-API-KEY")
 	const collectionName = "recipes"
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
+	fmt.Println("xApiKey", xApiKey)
 	fmt.Println("collectionName", collectionName)
 
 	ctx := context.Background()
@@ -94,7 +96,12 @@ func init() {
 	status := redisClient.Ping()
 	fmt.Println(status)
 
-	recipesHandler = handler.NewRecipesHandler(ctx, collection, redisClient)
+	recipesHandler = handler.NewRecipesHandler(
+		ctx,
+		collection,
+		redisClient,
+		xApiKey,
+	)
 
 }
 
