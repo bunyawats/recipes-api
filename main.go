@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -69,12 +70,10 @@ func init() {
 
 	var databaseUri = os.Getenv("MONGO_URI")
 	var databaseName = os.Getenv("MONGO_DATABASE")
-	var xApiKey = os.Getenv("X-API-KEY")
 	const collectionName = "recipes"
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
-	fmt.Println("xApiKey", xApiKey)
 	fmt.Println("collectionName", collectionName)
 
 	ctx := context.Background()
@@ -100,18 +99,34 @@ func init() {
 		ctx,
 		collection,
 		redisClient,
-		xApiKey,
 	)
 
 }
 
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		const secureKey = "X-API-KEY"
+		var xApiKey = os.Getenv(secureKey)
+		if c.GetHeader(secureKey) != xApiKey {
+			c.AbortWithStatus(http.StatusUnauthorized)
+		}
+		c.Next()
+	}
+}
+
 func main() {
 	router := gin.Default()
-	router.POST("/recipes", recipesHandler.NewRecipeHandler)
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
-	router.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
-	router.DELETE("/recipes/:id", recipesHandler.DeleteRecipesHandler)
-	//	router.GET("/recipes/search", SearchRecipesHandler)
+
+	authorized := router.Group("/")
+	authorized.Use(AuthMiddleware())
+	{
+		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
+		authorized.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
+		authorized.DELETE("/recipes/:id", recipesHandler.DeleteRecipesHandler)
+		//	router.GET("/recipes/search", SearchRecipesHandler)
+	}
+
 	err := router.Run()
 	if err != nil {
 		log.Fatal(err)
