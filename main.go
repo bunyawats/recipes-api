@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	handler "github.com/bunyawats/recipes-api/handlers"
@@ -29,6 +28,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"os"
 )
@@ -153,14 +153,19 @@ func initLoadUser() {
 		log.Fatal(err)
 	}
 	collectionUsers := client.Database(databaseName).Collection(collectionNameUsers)
-	h := sha256.New()
+
 	for username, password := range users {
 		fmt.Println(username, password)
+
+		hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+		hsPassword := string(hash)
+		fmt.Println("hsPassword", hsPassword)
+
 		collectionUsers.InsertOne(
 			ctx,
 			bson.M{
 				"username": username,
-				"password": h.Sum([]byte(password)),
+				"password": hsPassword,
 			},
 		)
 	}
