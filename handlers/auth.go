@@ -63,6 +63,54 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
 }
 
+func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
+	tokenValue := c.GetHeader(authorKey)
+	claims := &Claims{}
+	tkn, err := jwt.ParseWithClaims(
+		tokenValue,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv(jwtSecretKey)), nil
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if tkn == nil || !tkn.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid token",
+		})
+		return
+	}
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Token is not expired yet",
+		})
+		return
+	}
+	expirationTime := time.Now().Add(5 * time.Minute)
+	claims.ExpiresAt = expirationTime.Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	jwtSecret := os.Getenv(jwtSecretKey)
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	jwtOutput := JWTOutput{
+		Token:   tokenString,
+		Expires: expirationTime,
+	}
+	c.JSON(http.StatusOK, jwtOutput)
+}
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenValue := c.GetHeader(authorKey)
