@@ -18,34 +18,39 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	handler "github.com/bunyawats/recipes-api/handlers"
 	"github.com/bunyawats/recipes-api/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"os"
 )
 
 const (
-	mongoUri       = "MONGO_URI"
-	mongoDatabase  = "MONGO_DATABASE"
-	collectionName = "recipes"
-	apiKey         = "X-API-KEY"
-	jwtSecretKey   = "JWT_SECRET"
+	mongoUri              = "MONGO_URI"
+	mongoDatabase         = "MONGO_DATABASE"
+	collectionNameRecipes = "recipes"
+	collectionNameUsers   = "users"
+	apiKey                = "X-API-KEY"
+	jwtSecretKey          = "JWT_SECRET"
 )
 
-func InitLoad() {
+func initLoadRecipes() {
 
 	var databaseUri = os.Getenv(mongoUri)
 	var databaseName = os.Getenv(mongoDatabase)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
-	fmt.Println("collectionName", collectionName)
+	fmt.Println("collectionNameRecipes", collectionNameRecipes)
+	fmt.Println("collectionNameUser", collectionNameUsers)
 
 	recipes := make([]models.Recipe, 0)
 	file, _ := os.ReadFile("recipes.json")
@@ -62,7 +67,7 @@ func InitLoad() {
 	for _, recipe := range recipes {
 		lisOfRecipes = append(lisOfRecipes, recipe)
 	}
-	collection := client.Database(databaseName).Collection(collectionName)
+	collection := client.Database(databaseName).Collection(collectionNameRecipes)
 	insertManyResult, err := collection.InsertMany(ctx, lisOfRecipes)
 	if err != nil {
 		log.Fatal(err)
@@ -83,7 +88,8 @@ func init() {
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
-	fmt.Println("collectionName", collectionName)
+	fmt.Println("collectionNameRecipes", collectionNameRecipes)
+	fmt.Println("collectionNameUser", collectionNameUsers)
 	fmt.Println("xApiKey", xApiKey)
 	fmt.Println("jwtSecret", jwtSecret)
 
@@ -95,7 +101,8 @@ func init() {
 	if err != nil {
 		log.Fatal("Connect to MongoDB failed:", err.Error())
 	}
-	collection := client.Database(databaseName).Collection(collectionName)
+	collectionRecipes := client.Database(databaseName).Collection(collectionNameRecipes)
+	collectionUsers := client.Database(databaseName).Collection(collectionNameUsers)
 	log.Println("Connected to MongoDB")
 
 	redisClient := redis.NewClient(&redis.Options{
@@ -108,10 +115,10 @@ func init() {
 
 	recipesHandler = handler.NewRecipesHandler(
 		ctx,
-		collection,
+		collectionRecipes,
 		redisClient,
 	)
-	authHandler = &handler.AuthHandler{}
+	authHandler = handler.NewAuthHandler(ctx, collectionUsers)
 
 }
 
@@ -123,6 +130,45 @@ func init() {
 //		c.Next()
 //	}
 //}
+
+func initLoadUser() {
+
+	var databaseUri = os.Getenv(mongoUri)
+	var databaseName = os.Getenv(mongoDatabase)
+
+	fmt.Println("databaseUri", databaseUri)
+	fmt.Println("databaseName", databaseName)
+	fmt.Println("collectionNameUser", collectionNameUsers)
+
+	users := map[string]string{
+		"admin":    "password",
+		"bunyawat": "password",
+	}
+	ctx := context.Background()
+	client, _ := mongo.Connect(ctx, options.Client().ApplyURI(databaseUri))
+	if err := client.Ping(
+		context.TODO(),
+		readpref.Primary(),
+	); err != nil {
+		log.Fatal(err)
+	}
+	collectionUsers := client.Database(databaseName).Collection(collectionNameUsers)
+	h := sha256.New()
+	for username, password := range users {
+		fmt.Println(username, password)
+		collectionUsers.InsertOne(
+			ctx,
+			bson.M{
+				"username": username,
+				"password": h.Sum([]byte(password)),
+			},
+		)
+	}
+}
+
+func _main() {
+	initLoadUser()
+}
 
 func main() {
 	router := gin.Default()
