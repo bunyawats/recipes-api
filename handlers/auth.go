@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"context"
-	"crypto/sha256"
+	"fmt"
 	"github.com/bunyawats/recipes-api/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"os"
 	"time"
@@ -42,6 +43,7 @@ func NewAuthHandler(ctx context.Context, collection *mongo.Collection) *AuthHand
 
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
+	// validate request
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -50,12 +52,11 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 		return
 	}
 
-	h := sha256.New()
+	// find user by username
 	cur := handler.collection.FindOne(
 		handler.ctx,
 		bson.M{
 			"username": user.Username,
-			"password": h.Sum([]byte(user.Password)),
 		},
 	)
 	if cur.Err() != nil {
@@ -65,6 +66,21 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 		return
 	}
 
+	// compare hash and password
+	var foundUser models.User
+	cur.Decode(&foundUser)
+	fmt.Println("foundUser", foundUser)
+	byteHash := []byte(foundUser.Password)
+	bytePlainPwd := []byte(user.Password)
+	err := bcrypt.CompareHashAndPassword(byteHash, bytePlainPwd)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid username or password",
+		})
+		return
+	}
+
+	// create jwt token
 	expirationTime := time.Now().Add(10 * time.Minute)
 	claims := &Claims{
 		Username: user.Username,
