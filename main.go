@@ -22,6 +22,8 @@ import (
 	"fmt"
 	handler "github.com/bunyawats/recipes-api/handlers"
 	"github.com/bunyawats/recipes-api/models"
+	"github.com/gin-contrib/sessions"
+	redisStore "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,18 +36,20 @@ import (
 )
 
 const (
-	mongoUri              = "MONGO_URI"
-	mongoDatabase         = "MONGO_DATABASE"
+	mongoUriEnv           = "MONGO_URI"
+	mongoDatabaseEnv      = "MONGO_DATABASE"
 	collectionNameRecipes = "recipes"
 	collectionNameUsers   = "users"
 	apiKey                = "X-API-KEY"
 	jwtSecretKey          = "JWT_SECRET"
+	redisUriEnv           = "REDIS_URI"
+	sessionKey            = "recipes_api"
 )
 
 func initLoadRecipes() {
 
-	var databaseUri = os.Getenv(mongoUri)
-	var databaseName = os.Getenv(mongoDatabase)
+	var databaseUri = os.Getenv(mongoUriEnv)
+	var databaseName = os.Getenv(mongoDatabaseEnv)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
@@ -78,13 +82,15 @@ func initLoadRecipes() {
 var authHandler *handler.AuthHandler
 var recipesHandler *handler.RecipesHandler
 var xApiKey string
+var store sessions.Store
 
 func init() {
 
-	var databaseUri = os.Getenv(mongoUri)
-	var databaseName = os.Getenv(mongoDatabase)
+	var databaseUri = os.Getenv(mongoUriEnv)
+	var databaseName = os.Getenv(mongoDatabaseEnv)
 	xApiKey = os.Getenv(apiKey)
 	var jwtSecret = os.Getenv(jwtSecretKey)
+	var redisUri = os.Getenv(redisUriEnv)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
@@ -92,6 +98,7 @@ func init() {
 	fmt.Println("collectionNameUser", collectionNameUsers)
 	fmt.Println("xApiKey", xApiKey)
 	fmt.Println("jwtSecret", jwtSecret)
+	fmt.Println("redisUri", redisUri)
 
 	ctx := context.Background()
 	client, err := mongo.Connect(
@@ -106,7 +113,7 @@ func init() {
 	log.Println("Connected to MongoDB")
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     redisUri,
 		Password: "",
 		DB:       0,
 	})
@@ -119,6 +126,16 @@ func init() {
 		redisClient,
 	)
 	authHandler = handler.NewAuthHandler(ctx, collectionUsers)
+	store, err = redisStore.NewStore(
+		10,
+		"tcp",
+		redisUri,
+		"",
+		[]byte("secret"),
+	)
+	if err != nil {
+		log.Fatal("Connect to Redis failed:", err.Error())
+	}
 
 }
 
@@ -133,8 +150,8 @@ func init() {
 
 func initLoadUser() {
 
-	var databaseUri = os.Getenv(mongoUri)
-	var databaseName = os.Getenv(mongoDatabase)
+	var databaseUri = os.Getenv(mongoUriEnv)
+	var databaseName = os.Getenv(mongoDatabaseEnv)
 
 	fmt.Println("databaseUri", databaseUri)
 	fmt.Println("databaseName", databaseName)
@@ -177,9 +194,11 @@ func _main() {
 
 func main() {
 	router := gin.Default()
+	router.Use(sessions.Sessions(sessionKey, store))
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
 	router.POST("/refresh", authHandler.RefreshHandler)
+	router.POST("/signout", authHandler.SignOutHandler)
 
 	authorized := router.Group("/")
 	authorized.Use(handler.AuthMiddleware())
