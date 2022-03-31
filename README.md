@@ -3,6 +3,7 @@ go get github.com/rs/xid
 go get go.mongodb.org/mongo-driver/mongo
 go get github.com/go-redis/redis/v8
 go get github.com/dgrijalva/jwt-go
+go get github.com/gin-contrib/sessions
 
 go get -u
 go mod tidy
