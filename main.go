@@ -201,7 +201,7 @@ func main() {
 	router.POST("/signout", authHandler.SignOutHandler)
 
 	authorized := router.Group("/")
-	authorized.Use(handler.AuthMiddleware())
+	authorized.Use(authHandler.AuthMiddleware())
 	{
 		authorized.POST("/recipes", recipesHandler.NewRecipeHandler)
 		authorized.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)

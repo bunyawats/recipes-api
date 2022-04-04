@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/auth0-community/go-auth0"
 	"github.com/bunyawats/recipes-api/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-contrib/sessions"
@@ -11,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"os"
 	"time"
@@ -236,7 +238,7 @@ func AuthJwtMiddleware() gin.HandlerFunc {
 	}
 }
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthSessionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		sessionToken := session.Get("token")
@@ -245,6 +247,41 @@ func AuthMiddleware() gin.HandlerFunc {
 				"message": "Not logged",
 			})
 			c.Abort()
+		}
+		c.Next()
+	}
+}
+
+func (handler *AuthHandler) AuthMiddleware() gin.HandlerFunc {
+
+	auth0DomainName := os.Getenv("AUTH0_DOMAIN")
+	auth0ApiIdentifier := os.Getenv("AUTH0_API_IDENTIFIER")
+
+	fmt.Println("auth0DomainName", auth0DomainName)
+	fmt.Println("auth0ApiIdentifier", auth0ApiIdentifier)
+
+	return func(c *gin.Context) {
+		var auth0Domain = "https://" + auth0DomainName + "/"
+		client := auth0.NewJWKClient(
+			auth0.JWKClientOptions{
+				URI: auth0Domain + ".well-known/jwks.json",
+			},
+			nil,
+		)
+
+		configuration := auth0.NewConfiguration(
+			client,
+			[]string{auth0ApiIdentifier},
+			auth0Domain,
+			jose.RS256)
+		validator := auth0.NewValidator(configuration, nil)
+		_, err := validator.ValidateRequest(c.Request)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": err.Error(),
+			})
+			c.Abort()
+			return
 		}
 		c.Next()
 	}

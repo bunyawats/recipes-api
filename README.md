@@ -2,8 +2,11 @@ go get github.com/gin-gonic/gin
 go get github.com/rs/xid
 go get go.mongodb.org/mongo-driver/mongo
 go get github.com/go-redis/redis/v8
+go get github.com/gomodule/redigo@latest
 go get github.com/dgrijalva/jwt-go
 go get github.com/gin-contrib/sessions
+go get -v gopkg.in/square/go-jose.v2
+go get -v github.com/auth0-community/go-auth0
 
 go get -u
 go mod tidy
@@ -33,5 +36,7 @@ gnuplot apache-benchmark.p
 
 https://jwt.io/
 
+
+https://auth0.com/
 
 
