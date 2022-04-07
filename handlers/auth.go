@@ -110,6 +110,16 @@ func (handler *AuthHandler) SignInForJwtHandler(c *gin.Context) {
 
 }
 
+// swagger:operation POST /signin auth signIn
+// Login with username and password
+// ---
+// produces:
+// - application/json
+// responses:
+//     '200':
+//         description: Successful operation
+//     '401':
+//         description: Invalid credentials
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
 	// validate request
@@ -169,6 +179,19 @@ func (handler *AuthHandler) SignOutHandler(c *gin.Context) {
 	})
 }
 
+// swagger:operation POST /refresh auth refresh
+// Get new token in exchange for an old one
+// ---
+// produces:
+// - application/json
+// responses:
+//     '200':
+//         description: Successful operation
+//     '400':
+//         description: Token is new and doesn't need
+//                      a refresh
+//     '401':
+//         description: Invalid credentials
 func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
 	tokenValue := c.GetHeader(authorKey)
 	claims := &Claims{}

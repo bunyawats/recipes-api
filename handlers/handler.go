@@ -100,7 +100,7 @@ func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 }
 
 // swagger:operation POST /recipes recipes newRecipe
-// Update an existing recipe
+// Create a new recipe
 // ---
 // parameters:
 // - name: id

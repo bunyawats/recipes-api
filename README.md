@@ -17,6 +17,9 @@ brew tap go-swagger/go-swagger
 brew install go-swagger
 swagger version
 
+swagger generate spec -o ./swagger.json
+swagger serve --flavor=swagger ./swagger.json
+
 docker run -p 6379:6379 --name goredis redis
 docker stop goredis
 docker start goredis
@@ -33,10 +36,21 @@ ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
 brew install gnuplot
 gnuplot apache-benchmark.p
 
-
 https://jwt.io/
-
 
 https://auth0.com/
 
+https://ngrok.com/
+brew install ngrok/ngrok/ngrok
+ngrok http 8080
+http://ed7e-58-97-79-30.ngrok.io/recipes
 
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/localhost.key -out certs/localhost.crt
+chrome://flags/#allow-insecure-localhost
+
+curl --cacert certs/localhost.crt https://localhost/recipes
+curl -k https://localhost/recipes
+
+sudo nano /etc/hosts
+127.0.0.1 api.recipes.io
+ping api.recipes.io
