@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// swagger:parameters recipes newRecipe
 type Recipe struct {
 	ID           primitive.ObjectID `json:"id" bson:"_id"`
 	Name         string             `json:"name" bson:"name"`
