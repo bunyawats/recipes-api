@@ -37,6 +37,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -49,6 +50,20 @@ const (
 	jwtSecretKey          = "JWT_SECRET"
 	redisUriEnv           = "REDIS_URI"
 	sessionKey            = "recipes_api"
+)
+
+type (
+	Recipe struct {
+		Name    string `json:"name"`
+		Picture string `json:"picture"`
+	}
+)
+
+var (
+	authHandler    *handler.AuthHandler
+	recipesHandler *handler.RecipesHandler
+	xApiKey        string
+	store          sessions.Store
 )
 
 func initLoadRecipes() {
@@ -83,11 +98,6 @@ func initLoadRecipes() {
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
-
-var authHandler *handler.AuthHandler
-var recipesHandler *handler.RecipesHandler
-var xApiKey string
-var store sessions.Store
 
 func init() {
 
@@ -197,8 +207,29 @@ func _main() {
 	initLoadUser()
 }
 
+//func IndexHandler(c *gin.Context) {
+//	c.File("index.html")
+//}
+
 func IndexHandler(c *gin.Context) {
-	c.File("index.html")
+
+	recipes := make([]Recipe, 0)
+
+	recipes = append(recipes, Recipe{
+		Name:    "Burger",
+		Picture: "/assets/images/burger.jpg",
+	})
+	recipes = append(recipes, Recipe{
+		Name:    "Pizza",
+		Picture: "/assets/images/pizza.jpg",
+	})
+	recipes = append(recipes, Recipe{
+		Name:    "Tacos",
+		Picture: "/assets/images/tacos.jpg",
+	})
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"recipes": recipes,
+	})
 }
 
 func main() {
@@ -206,6 +237,7 @@ func main() {
 	router.Use(sessions.Sessions(sessionKey, store))
 
 	router.Static("/assets", "./assets")
+	router.LoadHTMLGlob("templates/*")
 
 	router.GET("/", IndexHandler)
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)

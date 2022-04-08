@@ -1,0 +1,16 @@
+<html>
+<head>
+    <title>Recipes Platform</title>
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+    <div class="recipes">
+        {{range .recipes}}
+        <div class="recipe">
+            <h2>{{.Name}}</h2>
+            <img src="{{.Picture}}" />
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>
