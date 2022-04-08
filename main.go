@@ -205,6 +205,8 @@ func main() {
 	router := gin.Default()
 	router.Use(sessions.Sessions(sessionKey, store))
 
+	router.Static("/assets", "./assets")
+
 	router.GET("/", IndexHandler)
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
