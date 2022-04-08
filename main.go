@@ -54,6 +54,7 @@ const (
 
 type (
 	StaticRecipe struct {
+		ID          string       `json:"ID"`
 		Name        string       `json:"name"`
 		Ingredients []Ingredient `json:"ingredients"`
 		Steps       []string     `json:"steps"`
@@ -232,6 +233,18 @@ func IndexHandler(c *gin.Context) {
 	})
 }
 
+func RecipeHandler(c *gin.Context) {
+	for _, recipe := range staticRecipes {
+		if recipe.ID == c.Param("id") {
+			c.HTML(http.StatusOK, "recipe.tmpl", gin.H{
+				"recipe": recipe,
+			})
+			return
+		}
+	}
+	c.File("404.html")
+}
+
 func main() {
 	router := gin.Default()
 	router.Use(sessions.Sessions(sessionKey, store))
@@ -240,6 +253,8 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	router.GET("/", IndexHandler)
+	router.GET("/recipes/:id", RecipeHandler)
+
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
 	router.POST("/refresh", authHandler.RefreshHandler)
