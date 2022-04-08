@@ -53,9 +53,17 @@ const (
 )
 
 type (
-	Recipe struct {
-		Name    string `json:"name"`
-		Picture string `json:"picture"`
+	StaticRecipe struct {
+		Name        string       `json:"name"`
+		Ingredients []Ingredient `json:"ingredients"`
+		Steps       []string     `json:"steps"`
+		Picture     string       `json:"imageURL"`
+	}
+
+	Ingredient struct {
+		Quantity string `json:"quantity"`
+		Name     string `json:"name"`
+		Type     string `json:"type"`
 	}
 )
 
@@ -64,6 +72,8 @@ var (
 	recipesHandler *handler.RecipesHandler
 	xApiKey        string
 	store          sessions.Store
+
+	staticRecipes []StaticRecipe
 )
 
 func initLoadRecipes() {
@@ -97,61 +107,6 @@ func initLoadRecipes() {
 		log.Fatal(err)
 	}
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
-}
-
-func init() {
-
-	var databaseUri = os.Getenv(mongoUriEnv)
-	var databaseName = os.Getenv(mongoDatabaseEnv)
-	xApiKey = os.Getenv(apiKey)
-	var jwtSecret = os.Getenv(jwtSecretKey)
-	var redisUri = os.Getenv(redisUriEnv)
-
-	fmt.Println("databaseUri", databaseUri)
-	fmt.Println("databaseName", databaseName)
-	fmt.Println("collectionNameRecipes", collectionNameRecipes)
-	fmt.Println("collectionNameUser", collectionNameUsers)
-	fmt.Println("xApiKey", xApiKey)
-	fmt.Println("jwtSecret", jwtSecret)
-	fmt.Println("redisUri", redisUri)
-
-	ctx := context.Background()
-	client, err := mongo.Connect(
-		ctx,
-		options.Client().ApplyURI(databaseUri),
-	)
-	if err != nil {
-		log.Fatal("Connect to MongoDB failed:", err.Error())
-	}
-	collectionRecipes := client.Database(databaseName).Collection(collectionNameRecipes)
-	collectionUsers := client.Database(databaseName).Collection(collectionNameUsers)
-	log.Println("Connected to MongoDB")
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     redisUri,
-		Password: "",
-		DB:       0,
-	})
-	status := redisClient.Ping()
-	fmt.Println(status)
-
-	recipesHandler = handler.NewRecipesHandler(
-		ctx,
-		collectionRecipes,
-		redisClient,
-	)
-	authHandler = handler.NewAuthHandler(ctx, collectionUsers)
-	store, err = redisStore.NewStore(
-		10,
-		"tcp",
-		redisUri,
-		"",
-		[]byte("secret"),
-	)
-	if err != nil {
-		log.Fatal("Connect to Redis failed:", err.Error())
-	}
-
 }
 
 //func AuthMiddleware() gin.HandlerFunc {
@@ -211,24 +166,69 @@ func _main() {
 //	c.File("index.html")
 //}
 
+func init() {
+
+	var databaseUri = os.Getenv(mongoUriEnv)
+	var databaseName = os.Getenv(mongoDatabaseEnv)
+	xApiKey = os.Getenv(apiKey)
+	var jwtSecret = os.Getenv(jwtSecretKey)
+	var redisUri = os.Getenv(redisUriEnv)
+
+	fmt.Println("databaseUri", databaseUri)
+	fmt.Println("databaseName", databaseName)
+	fmt.Println("collectionNameRecipes", collectionNameRecipes)
+	fmt.Println("collectionNameUser", collectionNameUsers)
+	fmt.Println("xApiKey", xApiKey)
+	fmt.Println("jwtSecret", jwtSecret)
+	fmt.Println("redisUri", redisUri)
+
+	ctx := context.Background()
+	client, err := mongo.Connect(
+		ctx,
+		options.Client().ApplyURI(databaseUri),
+	)
+	if err != nil {
+		log.Fatal("Connect to MongoDB failed:", err.Error())
+	}
+	collectionRecipes := client.Database(databaseName).Collection(collectionNameRecipes)
+	collectionUsers := client.Database(databaseName).Collection(collectionNameUsers)
+	log.Println("Connected to MongoDB")
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     redisUri,
+		Password: "",
+		DB:       0,
+	})
+	status := redisClient.Ping()
+	fmt.Println(status)
+
+	recipesHandler = handler.NewRecipesHandler(
+		ctx,
+		collectionRecipes,
+		redisClient,
+	)
+	authHandler = handler.NewAuthHandler(ctx, collectionUsers)
+	store, err = redisStore.NewStore(
+		10,
+		"tcp",
+		redisUri,
+		"",
+		[]byte("secret"),
+	)
+	if err != nil {
+		log.Fatal("Connect to Redis failed:", err.Error())
+	}
+
+	staticRecipes = make([]StaticRecipe, 0)
+	file, _ := os.ReadFile("recipes.json")
+	_ = json.Unmarshal([]byte(file), &staticRecipes)
+	fmt.Println("staticRecipes:", staticRecipes)
+}
+
 func IndexHandler(c *gin.Context) {
 
-	recipes := make([]Recipe, 0)
-
-	recipes = append(recipes, Recipe{
-		Name:    "Burger",
-		Picture: "/assets/images/burger.jpg",
-	})
-	recipes = append(recipes, Recipe{
-		Name:    "Pizza",
-		Picture: "/assets/images/pizza.jpg",
-	})
-	recipes = append(recipes, Recipe{
-		Name:    "Tacos",
-		Picture: "/assets/images/tacos.jpg",
-	})
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"recipes": recipes,
+		"recipes": staticRecipes,
 	})
 }
 
