@@ -2,17 +2,22 @@
 //
 // This is a sample recipes API. You can find out more about the API at https://github.com/PacktPublishing/Building-Distributed-Applications-in-Gin.
 //
-//  Schemes: http
-//  Host: localhost:8080
-//  BasePath: /
-//  Version: 1.0.0
-//  Contact: John Doe<john.doe@example.com> http://john.doe.com
+//	Schemes: http
+//  Host: api.recipes.io:8080
+//	BasePath: /
+//	Version: 1.0.0
+//	Contact: Mohamed Labouardy <mohamed@labouardy.com> https://labouardy.com
+//  SecurityDefinitions:
+//  api_key:
+//    type: apiKey
+//    name: Authorization
+//    in: header
 //
-//  Consumes:
-//  - application/json
+//	Consumes:
+//	- application/json
 //
-//  Produces:
-//  - application/json
+//	Produces:
+//	- application/json
 // swagger:meta
 package main
 
@@ -192,31 +197,15 @@ func _main() {
 	initLoadUser()
 }
 
-// Recipes API
-//
-// This is a sample recipes API. You can find out more about the API at https://github.com/PacktPublishing/Building- Distributed-Applications-in-Gin.
-//
-//  Schemes: http
-//  Host: api.recipes.io:8080
-//  BasePath: /
-//  Version: 1.0.0
-//  Contact: Mohamed Labouardy
-//  <mohamed@labouardy.com> https://labouardy.com
-//  SecurityDefinitions:
-//  api_key:
-//    type: apiKey
-//    name: Authorization
-//    in: header
-//
-//  Consumes:
-//  - application/json
-//
-//  Produces:
-//  - application/json
-// swagger:meta
+func IndexHandler(c *gin.Context) {
+	c.File("index.html")
+}
+
 func main() {
 	router := gin.Default()
 	router.Use(sessions.Sessions(sessionKey, store))
+
+	router.GET("/", IndexHandler)
 	router.GET("/recipes", recipesHandler.ListRecipesHandler)
 	router.POST("/signin", authHandler.SignInHandler)
 	router.POST("/refresh", authHandler.RefreshHandler)

@@ -102,12 +102,6 @@ func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 // swagger:operation POST /recipes recipes newRecipe
 // Create a new recipe
 // ---
-// parameters:
-// - name: id
-//   in: path
-//   description: ID of the recipe
-//   required: true
-//   type: string
 // produces:
 // - application/json
 // responses:
@@ -115,8 +109,6 @@ func (handler *RecipesHandler) ListRecipesHandler(c *gin.Context) {
 //         description: Successful operation
 //     '400':
 //         description: Invalid input
-//     '404':
-//         description: Invalid recipe ID
 func (handler *RecipesHandler) NewRecipeHandler(c *gin.Context) {
 
 	// validate request
@@ -216,21 +208,19 @@ func (handler *RecipesHandler) UpdateRecipeHandler(c *gin.Context) {
 }
 
 // swagger:operation DELETE /recipes/{id} recipes deleteRecipe
-// Update an existing recipe
+// Delete an existing recipe
 // ---
-// parameters:
-// - name: id
-//   in: path
-//   description: ID of the recipe
-//   required: true
-//   type: string
 // produces:
 // - application/json
+// parameters:
+//   - name: id
+//     in: path
+//     description: ID of the recipe
+//     required: true
+//     type: string
 // responses:
 //     '200':
 //         description: Successful operation
-//     '400':
-//         description: Invalid input
 //     '404':
 //         description: Invalid recipe ID
 func (handler *RecipesHandler) DeleteRecipesHandler(c *gin.Context) {
@@ -266,24 +256,20 @@ func (handler *RecipesHandler) DeleteRecipesHandler(c *gin.Context) {
 
 }
 
-// swagger:operation GET /recipes/search recipes searchRecipe
-// Update an existing recipe
+// swagger:operation GET /recipes/{id} recipes oneRecipe
+// Get one recipe
 // ---
-// parameters:
-// - name: id
-//   in: path
-//   description: ID of the recipe
-//   required: true
-//   type: string
 // produces:
 // - application/json
+// parameters:
+//   - name: id
+//     in: path
+//     description: recipe ID
+//     required: true
+//     type: string
 // responses:
 //     '200':
 //         description: Successful operation
-//     '400':
-//         description: Invalid input
-//     '404':
-//         description: Invalid recipe ID
 func (handler *RecipesHandler) SearchRecipesHandler(c *gin.Context) {
 	tag := c.Query("tag")
 	listOfRecipes := make([]models.Recipe, 0)

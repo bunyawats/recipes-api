@@ -170,6 +170,12 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	})
 }
 
+// swagger:operation POST /signout auth signOut
+// Signing out
+// ---
+// responses:
+//     '200':
+//         description: Successful operation
 func (handler *AuthHandler) SignOutHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
@@ -180,16 +186,13 @@ func (handler *AuthHandler) SignOutHandler(c *gin.Context) {
 }
 
 // swagger:operation POST /refresh auth refresh
-// Get new token in exchange for an old one
+// Refresh token
 // ---
 // produces:
 // - application/json
 // responses:
 //     '200':
 //         description: Successful operation
-//     '400':
-//         description: Token is new and doesn't need
-//                      a refresh
 //     '401':
 //         description: Invalid credentials
 func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
