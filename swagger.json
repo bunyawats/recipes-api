@@ -13,13 +13,13 @@
     "description": "This is a sample recipes API. You can find out more about the API at https://github.com/PacktPublishing/Building-Distributed-Applications-in-Gin.",
     "title": "Recipes API",
     "contact": {
-      "name": "John Doe",
-      "url": "http://john.doe.com",
-      "email": "john.doe@example.com"
+      "name": "Mohamed Labouardy",
+      "url": "https://labouardy.com",
+      "email": "mohamed@labouardy.com"
     },
     "version": "1.0.0"
   },
-  "host": "localhost:8080",
+  "host": "api.recipes.io:8080",
   "basePath": "/",
   "paths": {
     "/recipes": {
@@ -50,12 +50,49 @@
         "parameters": [
           {
             "$ref": "#/definitions/ObjectID",
-            "type": "string",
             "x-go-name": "ID",
-            "description": "ID of the recipe",
             "name": "id",
-            "in": "path",
-            "required": true
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "Name",
+            "name": "name",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-go-name": "Tags",
+            "name": "tags",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-go-name": "Ingredients",
+            "name": "ingredients",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-go-name": "Instructions",
+            "name": "instructions",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "x-go-name": "PublishedAt",
+            "name": "publishedAt",
+            "in": "query"
           }
         ],
         "responses": {
@@ -64,27 +101,24 @@
           },
           "400": {
             "description": "Invalid input"
-          },
-          "404": {
-            "description": "Invalid recipe ID"
           }
         }
       }
     },
-    "/recipes/search": {
+    "/recipes/{id}": {
       "get": {
-        "description": "Update an existing recipe",
+        "description": "Get one recipe",
         "produces": [
           "application/json"
         ],
         "tags": [
           "recipes"
         ],
-        "operationId": "searchRecipe",
+        "operationId": "oneRecipe",
         "parameters": [
           {
             "type": "string",
-            "description": "ID of the recipe",
+            "description": "recipe ID",
             "name": "id",
             "in": "path",
             "required": true
@@ -93,17 +127,9 @@
         "responses": {
           "200": {
             "description": "Successful operation"
-          },
-          "400": {
-            "description": "Invalid input"
-          },
-          "404": {
-            "description": "Invalid recipe ID"
           }
         }
-      }
-    },
-    "/recipes/{id}": {
+      },
       "put": {
         "description": "Update an existing recipe",
         "produces": [
@@ -135,7 +161,7 @@
         }
       },
       "delete": {
-        "description": "Update an existing recipe",
+        "description": "Delete an existing recipe",
         "produces": [
           "application/json"
         ],
@@ -156,9 +182,6 @@
           "200": {
             "description": "Successful operation"
           },
-          "400": {
-            "description": "Invalid input"
-          },
           "404": {
             "description": "Invalid recipe ID"
           }
@@ -167,7 +190,7 @@
     },
     "/refresh": {
       "post": {
-        "description": "Get new token in exchange for an old one",
+        "description": "Refresh token",
         "produces": [
           "application/json"
         ],
@@ -178,9 +201,6 @@
         "responses": {
           "200": {
             "description": "Successful operation"
-          },
-          "400": {
-            "description": "Token is new and doesn't need a refresh"
           },
           "401": {
             "description": "Invalid credentials"
@@ -225,6 +245,20 @@
           }
         }
       }
+    },
+    "/signout": {
+      "post": {
+        "description": "Signing out",
+        "tags": [
+          "auth"
+        ],
+        "operationId": "signOut",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -236,6 +270,13 @@
         "format": "uint8"
       },
       "x-go-package": "go.mongodb.org/mongo-driver/bson/primitive"
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
     }
   }
 }
