@@ -7,6 +7,7 @@ go get github.com/dgrijalva/jwt-go
 go get github.com/gin-contrib/sessions
 go get -v gopkg.in/square/go-jose.v2
 go get -v github.com/auth0-community/go-auth0
+go get github.com/jessevdk/go-assets-builder
 
 go get -u
 go mod tidy
@@ -54,3 +55,19 @@ curl -k https://localhost/recipes
 sudo nano /etc/hosts
 127.0.0.1 api.recipes.io
 ping api.recipes.io
+
+
+export AUTH0_API_IDENTIFIER=https://api.recipes.ssc.io
+export AUTH0_DOMAIN=bunyawats.auth0.com
+export JWT_SECRET=eUbP9shywUygMx7u
+export MONGO_DATABASE=demo
+export MONGO_URI=mongodb://localhost:27017/test
+export REDIS_URI=localhost:6379
+export X_API_KEY=eUbP9shywUygMx7u
+
+go build -o app main.go
+./app
+
+go install github.com/jessevdk/go-assets-builder
+go-assets-builder templates assets 404.html recipes.json -o assets.go
+
