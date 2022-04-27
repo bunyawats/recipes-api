@@ -8,7 +8,6 @@ require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/jessevdk/go-assets v0.0.0-20160921144138-4f4301a06e15
 	github.com/rs/xid v1.4.0
 	go.mongodb.org/mongo-driver v1.9.0
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
@@ -29,7 +28,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.1 // indirect
+	github.com/klauspost/compress v1.15.2 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
