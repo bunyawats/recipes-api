@@ -23,6 +23,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	handler "github.com/bunyawats/recipes-api/handlers"
@@ -37,11 +38,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
 const (
@@ -78,6 +77,15 @@ var (
 	store          sessions.Store
 
 	staticRecipes []StaticRecipe
+
+	//go:embed templates
+	templatesFS embed.FS
+
+	//go:embed assets
+	assetsFS embed.FS
+
+	//go:embed recipes.json
+	jsonByte []byte
 )
 
 func initLoadRecipes() {
@@ -223,19 +231,18 @@ func init() {
 		log.Fatal("Connect to Redis failed:", err.Error())
 	}
 
-	//staticRecipes = make([]StaticRecipe, 0)
-	//file, _ := os.ReadFile("recipes.json")
-	//_ = json.Unmarshal([]byte(file), &staticRecipes)
-	//fmt.Println("staticRecipes:", staticRecipes)
-
 	staticRecipes = make([]StaticRecipe, 0)
-	json.Unmarshal(Assets.Files["/recipes.json"].Data,
-		&staticRecipes)
+	err = json.Unmarshal(jsonByte, &staticRecipes)
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Println("staticRecipes:", staticRecipes)
+
 }
 
 func IndexHandler(c *gin.Context) {
 
-	c.HTML(http.StatusOK, "/templates/index.tmpl", gin.H{
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"recipes": staticRecipes,
 	})
 }
@@ -243,7 +250,7 @@ func IndexHandler(c *gin.Context) {
 func RecipeHandler(c *gin.Context) {
 	for _, recipe := range staticRecipes {
 		if recipe.ID == c.Param("id") {
-			c.HTML(http.StatusOK, "/templates/recipe.tmpl", gin.H{
+			c.HTML(http.StatusOK, "recipe.tmpl", gin.H{
 				"recipe": recipe,
 			})
 			return
@@ -252,45 +259,14 @@ func RecipeHandler(c *gin.Context) {
 	c.File("404.html")
 }
 
-func loadTemplate() (*template.Template, error) {
-	t := template.New("")
-	for name, file := range Assets.Files {
-		if file.IsDir() || !strings.HasSuffix(name,
-			".tmpl") {
-			continue
-		}
-		h, err := ioutil.ReadAll(file)
-		if err != nil {
-			return nil, err
-		}
-		t, err = t.New(name).Parse(string(h))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return t, nil
-}
-
-func StaticHandler(c *gin.Context) {
-	filepath := c.Param("filepath")
-	data := Assets.Files["/assets"+filepath].Data
-	c.Writer.Write(data)
-}
-
 func main() {
-
-	t, err := loadTemplate()
-	if err != nil {
-		panic(err)
-	}
 
 	router := gin.Default()
 	router.Use(sessions.Sessions(sessionKey, store))
 
-	//router.Static("/assets", "./assets")
-	//router.LoadHTMLGlob("templates/*")
-	router.SetHTMLTemplate(t)
-	router.GET("/assets/*filepath", StaticHandler)
+	templateFile := template.Must(template.New("").ParseFS(templatesFS, "templates/*.tmpl"))
+	router.SetHTMLTemplate(templateFile)
+	router.StaticFS("/assets", http.FS(assetsFS))
 
 	router.GET("/", IndexHandler)
 	router.GET("/recipes/:id", RecipeHandler)
@@ -309,12 +285,12 @@ func main() {
 		//	router.GET("/recipes/search", SearchRecipesHandler)
 	}
 
-	err = router.RunTLS(
-		":443",
-		"certs/localhost.crt",
-		"certs/localhost.key",
-	)
-	//err := router.Run()
+	//err = router.RunTLS(
+	//	":443",
+	//	"certs/localhost.crt",
+	//	"certs/localhost.key",
+	//)
+	err := router.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
