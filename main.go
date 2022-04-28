@@ -38,6 +38,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -254,6 +255,7 @@ func RecipeHandler(c *gin.Context) {
 				"recipe": recipe,
 			})
 			return
+
 		}
 	}
 	c.File("404.html")
@@ -265,8 +267,14 @@ func main() {
 	router.Use(sessions.Sessions(sessionKey, store))
 
 	templateFile := template.Must(template.New("").ParseFS(templatesFS, "templates/*.tmpl"))
+
+	fsys, err := fs.Sub(assetsFS, "assets")
+	if err != nil {
+		panic(err)
+	}
+
 	router.SetHTMLTemplate(templateFile)
-	router.StaticFS("/assets", http.FS(assetsFS))
+	router.StaticFS("/assets", http.FS(fsys))
 
 	router.GET("/", IndexHandler)
 	router.GET("/recipes/:id", RecipeHandler)
@@ -290,7 +298,7 @@ func main() {
 	//	"certs/localhost.crt",
 	//	"certs/localhost.key",
 	//)
-	err := router.Run()
+	err = router.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
