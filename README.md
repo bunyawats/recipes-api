@@ -9,65 +9,65 @@ go get -v gopkg.in/square/go-jose.v2\
 go get -v github.com/auth0-community/go-auth0\
 go get github.com/jessevdk/go-assets-builder
 
-go get -u
-go mod tidy
+go get -u\
+go mod tidy\
 
 brew install jq
 
-brew tap go-swagger/go-swagger
-brew install go-swagger
+brew tap go-swagger/go-swagger\
+brew install go-swagger\
 swagger version
 
-swagger generate spec -o ./swagger.json
+swagger generate spec -o ./swagger.json\
 swagger serve --flavor=swagger ./swagger.json
 
-docker run -p 6379:6379 --name goredis redis
-docker stop goredis
+docker run -p 6379:6379 --name goredis redis\
+docker stop goredis\
 docker start goredis
 
-brew install redis
+brew install redis\
 redis-cli ping
 
 docker run -d --name redisinsight --link goredis -p 8001:8001 redislabs/redisinsight
 
-brew install apache2
-ab -n 2000 -c 100 -g without-cache.data http://localhost:8080/recipes
-ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
+brew install apache2\
+ab -n 2000 -c 100 -g without-cache.data http://localhost:8080/recipes\
+ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes\
 
-brew install gnuplot
+brew install gnuplot\
 gnuplot apache-benchmark.p
 
 https://jwt.io/
 
 https://auth0.com/
 
-https://ngrok.com/
-brew install ngrok/ngrok/ngrok
-ngrok http 8080
+https://ngrok.com/\
+brew install ngrok/ngrok/ngrok\
+ngrok http 8080\
 http://ed7e-58-97-79-30.ngrok.io/recipes
 
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/localhost.key -out certs/localhost.crt
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/localhost.key -out certs/localhost.crt\
 chrome://flags/#allow-insecure-localhost
 
 curl --cacert certs/localhost.crt https://localhost/recipes
 curl -k https://localhost/recipes
 
-sudo nano /etc/hosts
-127.0.0.1 api.recipes.io
+sudo nano /etc/hosts\
+127.0.0.1 api.recipes.io\
 ping api.recipes.io
 
 
-export AUTH0_API_IDENTIFIER=https://api.recipes.ssc.io
-export AUTH0_DOMAIN=bunyawats.auth0.com
-export JWT_SECRET=eUbP9shywUygMx7u
-export MONGO_DATABASE=demo
-export MONGO_URI=mongodb://localhost:27017/test
-export REDIS_URI=localhost:6379
-export X_API_KEY=eUbP9shywUygMx7u
+export AUTH0_API_IDENTIFIER=https://api.recipes.ssc.io\
+export AUTH0_DOMAIN=bunyawats.auth0.com\
+export JWT_SECRET=eUbP9shywUygMx7u\
+export MONGO_DATABASE=demo\
+export MONGO_URI=mongodb://localhost:27017/test\
+export REDIS_URI=localhost:6379\
+export X_API_KEY=eUbP9shywUygMx7u\
 
-go build -o app main.go
+go build -o app main.go\
 ./app
 
-go install github.com/jessevdk/go-assets-builder
+go install github.com/jessevdk/go-assets-builder\
 go-assets-builder templates assets 404.html recipes.json -o assets.go
 
