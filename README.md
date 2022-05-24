@@ -10,7 +10,7 @@ go get -v github.com/auth0-community/go-auth0\
 go get github.com/jessevdk/go-assets-builder
 
 go get -u\
-go mod tidy\
+go mod tidy
 
 brew install jq
 
@@ -32,7 +32,7 @@ docker run -d --name redisinsight --link goredis -p 8001:8001 redislabs/redisins
 
 brew install apache2\
 ab -n 2000 -c 100 -g without-cache.data http://localhost:8080/recipes\
-ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes\
+ab -n 2000 -c 100 -g with-cache.data http://localhost:8080/recipes
 
 brew install gnuplot\
 gnuplot apache-benchmark.p
@@ -63,7 +63,7 @@ export JWT_SECRET=eUbP9shywUygMx7u\
 export MONGO_DATABASE=demo\
 export MONGO_URI=mongodb://localhost:27017/test\
 export REDIS_URI=localhost:6379\
-export X_API_KEY=eUbP9shywUygMx7u\
+export X_API_KEY=eUbP9shywUygMx7u
 
 go build -o app main.go\
 ./app
